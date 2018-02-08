@@ -29,6 +29,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 
@@ -37,10 +38,10 @@ import java.net.URL;
  */
 public class SeekableHTTPStream extends SeekableStream {
 
-    private long position = 0;
-    private long contentLength = -1;
-    private final URL url;
-    private final Proxy proxy;
+    protected long position = 0;
+    protected long contentLength = -1;
+    protected final URL url;
+    protected final Proxy proxy;
 
     public SeekableHTTPStream(final URL url) {
         this(url, null);
@@ -58,8 +59,7 @@ public class SeekableHTTPStream extends SeekableStream {
         if (contentLengthString != null) {
             try {
                 contentLength = Long.parseLong(contentLengthString);
-            }
-            catch (NumberFormatException ignored) {
+            } catch (NumberFormatException ignored) {
                 System.err.println("WARNING: Invalid content length (" + contentLengthString + "  for: " + url);
                 contentLength = -1;
             }
@@ -90,7 +90,7 @@ public class SeekableHTTPStream extends SeekableStream {
     }
 
     @Override
-    public void seek(final long position) {
+    public void seek(final long position) throws IOException {
         this.position = position;
     }
 
@@ -98,7 +98,7 @@ public class SeekableHTTPStream extends SeekableStream {
     public int read(byte[] buffer, int offset, int len) throws IOException {
 
         if (offset < 0 || len < 0 || (offset + len) > buffer.length) {
-            throw new IndexOutOfBoundsException("Offset="+offset+",len="+len+",buflen="+buffer.length);
+            throw new IndexOutOfBoundsException("Offset=" + offset + ",len=" + len + ",buflen=" + buffer.length);
         }
         if (len == 0 || position == contentLength) {
             return 0;
@@ -106,20 +106,16 @@ public class SeekableHTTPStream extends SeekableStream {
 
         HttpURLConnection connection = null;
         InputStream is = null;
-        String byteRange = "";
         int n = 0;
         try {
-            connection = proxy == null ?
-                    (HttpURLConnection) url.openConnection() :
-                    (HttpURLConnection) url.openConnection(proxy);
+            URL actualURL = getActualURLToRead(buffer, offset, len);
 
-            long endRange = position + len - 1;
-            // IF we know the total content length, limit the end range to that.
-            if (contentLength > 0) {
-                endRange = Math.min(endRange, contentLength);
-            }
-            byteRange = "bytes=" + position + "-" + endRange;
-            connection.setRequestProperty("Range", byteRange);
+            connection = proxy == null ?
+                    (HttpURLConnection) actualURL.openConnection() :
+                    (HttpURLConnection) actualURL.openConnection(proxy);
+
+            setAuthentication(connection);
+            setRange(len, connection);
 
             is = connection.getInputStream();
 
@@ -139,9 +135,7 @@ public class SeekableHTTPStream extends SeekableStream {
 
             return n;
 
-        }
-
-        catch (IOException e) {
+        } catch (IOException e) {
             // THis is a bit of a hack, but its not clear how else to handle this.  If a byte range is specified
             // that goes past the end of the file the response code will be 416.  The MAC os translates this to
             // an IOException with the 416 code in the message.  Windows translates the error to an EOFException.
@@ -160,9 +154,7 @@ public class SeekableHTTPStream extends SeekableStream {
                 throw e;
             }
 
-        }
-
-        finally {
+        } finally {
             if (is != null) {
                 is.close();
             }
@@ -170,6 +162,25 @@ public class SeekableHTTPStream extends SeekableStream {
                 connection.disconnect();
             }
         }
+    }
+
+    protected URL getActualURLToRead(byte[] buffer, int offset, int len) throws MalformedURLException {
+        return url; // return unchanged URL by default
+    }
+
+    protected void setRange(int len, HttpURLConnection connection) {
+        String byteRange;
+        long endRange = position + len - 1;
+        // IF we know the total content length, limit the end range to that.
+        if (contentLength > 0) {
+            endRange = Math.min(endRange, contentLength);
+        }
+        byteRange = "bytes=" + position + "-" + endRange;
+        connection.setRequestProperty("Range", byteRange);
+    }
+
+    protected void setAuthentication(HttpURLConnection connection) {
+        // connection is not secured by default
     }
 
 
@@ -181,9 +192,9 @@ public class SeekableHTTPStream extends SeekableStream {
 
     @Override
     public int read() throws IOException {
-    	byte []tmp=new byte[1];
-    	read(tmp,0,1);
-    	return (int) tmp[0] & 0xFF; 
+        byte[] tmp = new byte[1];
+        read(tmp, 0, 1);
+        return (int) tmp[0] & 0xFF;
     }
 
     @Override

@@ -24,45 +24,52 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.samtools.util.IOUtil;
+import org.apache.commons.io.IOUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.Charset;
 import java.util.function.Function;
 
 /**
  * Singleton class for getting {@link SeekableStream}s from URL/paths
  * Applications using this library can set their own factory
+ *
  * @author jrobinso
  * @date Nov 30, 2009
  */
-public class SeekableStreamFactory{
+public class SeekableStreamFactory {
 
     private static final ISeekableStreamFactory DEFAULT_FACTORY;
     private static ISeekableStreamFactory currentFactory;
 
-    static{
+    static {
         DEFAULT_FACTORY = new DefaultSeekableStreamFactory();
         currentFactory = DEFAULT_FACTORY;
     }
 
-    private SeekableStreamFactory(){}
+    private SeekableStreamFactory() {
+    }
 
-    public static void setInstance(final ISeekableStreamFactory factory){
+    public static void setInstance(final ISeekableStreamFactory factory) {
         currentFactory = factory;
     }
 
-    public static ISeekableStreamFactory getInstance(){
+    public static ISeekableStreamFactory getInstance() {
         return currentFactory;
     }
 
     /**
      * Does this path point to a regular file on disk and not something like a URL?
+     *
      * @param path the path to test
      * @return true if the path is to a file on disk
      */
     public static boolean isFilePath(final String path) {
-        return ! ( path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:") );
+        return !(path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:"));
     }
 
     private static class DefaultSeekableStreamFactory implements ISeekableStreamFactory {
@@ -79,7 +86,7 @@ public class SeekableStreamFactory{
 
         /**
          * The wrapper will only be applied to the stream if the stream is treated as a {@link java.nio.file.Path}
-         *
+         * <p>
          * This currently means any uri with a scheme that is not http, https, ftp, or file will have the wrapper applied to it
          *
          * @param path    a uri like String representing a resource to open
@@ -92,7 +99,17 @@ public class SeekableStreamFactory{
 
             if (path.startsWith("http:") || path.startsWith("https:")) {
                 final URL url = new URL(path);
-                return new SeekableHTTPStream(url);
+                final String mainURLString = path.contains("?") ? path.substring(0, path.indexOf("?")) : path;
+                final String fileSizeURLString = mainURLString + "/size";
+                final URL fileSizeURL = new URL(fileSizeURLString);
+                try { // TODO: replace "try-catch" with checking for a custom RES header
+                    URLConnection urlConnection = fileSizeURL.openConnection();
+                    String fileSizeString = IOUtils.readLines(urlConnection.getInputStream(), Charset.defaultCharset()).iterator().next();
+                    long fileSize = Long.parseLong(fileSizeString);
+                    return new SeekableRESStream(url, null, null, fileSize);
+                } catch (Exception e) {
+                    return new SeekableHTTPStream(url);
+                }
             } else if (path.startsWith("ftp:")) {
                 return new SeekableFTPStream(new URL(path));
             } else if (path.startsWith("file:")) {
@@ -105,12 +122,12 @@ public class SeekableStreamFactory{
         }
 
         @Override
-        public SeekableStream getBufferedStream(SeekableStream stream){
+        public SeekableStream getBufferedStream(SeekableStream stream) {
             return getBufferedStream(stream, SeekableBufferedStream.DEFAULT_BUFFER_SIZE);
         }
 
         @Override
-        public SeekableStream getBufferedStream(SeekableStream stream, int bufferSize){
+        public SeekableStream getBufferedStream(SeekableStream stream, int bufferSize) {
             if (bufferSize == 0) return stream;
             else return new SeekableBufferedStream(stream, bufferSize);
         }
