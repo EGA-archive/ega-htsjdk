@@ -26,12 +26,12 @@ import java.net.URL;
 
 /**
  * @author asenf
- * 
+ * <p>
  * Attach a SeekableStream directly to a RES_MVC microservice.
  * This is for archive internal usage - there is no access control level in this
  * stream. Other microservices than RES are responsible for AuthN/Z
  * 'auth' is retained in case RES_MVC is deployed with Basic Auth control
- * 
+ * <p>
  * Assume: File Archive ID specified as part of URL upin instantiation.
  * Destination Format, Key specified upon use; not known upon instantiation.
  */
@@ -44,7 +44,7 @@ public class EgaSeekableResStream extends SeekableStream {
     private final URL url;  // RES_MVC Microservice
     private final Proxy proxy;
     private final String auth; // Basic Auth (optional)
-    
+
     private boolean hack = false;
     private String hack_extension = "";
 
@@ -59,17 +59,17 @@ public class EgaSeekableResStream extends SeekableStream {
     public EgaSeekableResStream(final URL url, Proxy proxy) {
         this(url, proxy, null);
     }
-    
+
     public EgaSeekableResStream(final URL url, Proxy proxy, String auth) {
         this(url, proxy, auth, -1);
     }
-    
+
     public EgaSeekableResStream(final URL url, Proxy proxy, String auth, long fileSize) {
 
         this.proxy = proxy;
         this.url = url;
         this.auth = auth;
-        this.contentLength = (fileSize - 16)<-1?-1:(fileSize - 16); // This is true for AES Encrypted Streams (first 16 bytes = IV)
+        this.contentLength = (fileSize - 16) < -1 ? -1 : (fileSize - 16); // This is true for AES Encrypted Streams (first 16 bytes = IV)
 
         // Try to get the file length
         // Note: This also sets setDefaultUseCaches(false), which is important
@@ -77,13 +77,12 @@ public class EgaSeekableResStream extends SeekableStream {
         if (contentLengthString != null && contentLength == -1) {
             try {
                 contentLength = Long.parseLong(contentLengthString);
-            }
-            catch (NumberFormatException ignored) {
+            } catch (NumberFormatException ignored) {
                 System.err.println("WARNING: Invalid content length (" + contentLengthString + "  for: " + url);
                 contentLength = -1;
             }
         }
-        
+
     }
 
     public long position() {
@@ -111,15 +110,16 @@ public class EgaSeekableResStream extends SeekableStream {
         else
             throw new IOException("requesting seek past end of stream: " + position + " (max: " + this.contentLength + ")  " + url.toString());
     }
+
     public int read(byte[] buffer, int offset, int len) throws IOException {
         return read(buffer, offset, len, "plain", ""); // Default unencrypted Stream
     }
 
     public int read(byte[] buffer, int offset, int len,
-            String destinationFormat, String destinationKey) throws IOException {
+                    String destinationFormat, String destinationKey) throws IOException {
 
         if (offset < 0 || len < 0 || (offset + len) > buffer.length) {
-            throw new IndexOutOfBoundsException("Offset="+offset+",len="+len+",buflen="+buffer.length);
+            throw new IndexOutOfBoundsException("Offset=" + offset + ",len=" + len + ",buflen=" + buffer.length);
         }
         if (len == 0 || position == contentLength) {
             if (position >= contentLength) {
@@ -128,7 +128,7 @@ public class EgaSeekableResStream extends SeekableStream {
             return 0;
         }
         if (position + len > contentLength) {
-            len = (int) (contentLength-position);
+            len = (int) (contentLength - position);
         }
 
         HttpURLConnection connection = null;
@@ -147,33 +147,33 @@ public class EgaSeekableResStream extends SeekableStream {
             }
             String endCoordinate = String.valueOf(endRange);
             res_url += "?startCoordinate=" + startCoordinate +
-                    "&endCoordinate=" + endCoordinate + 
+                    "&endCoordinate=" + endCoordinate +
                     "&destinationFormat=" + destinationFormat;
-            if (destinationKey!=null && destinationKey.length()>0) {
+            if (destinationKey != null && destinationKey.length() > 0) {
                 res_url += "&destinationKey=" + destinationKey;
             }
             URL urlResMvc = new URL(res_url);
-            
+
             connection = proxy == null ?
                     (HttpURLConnection) urlResMvc.openConnection() :
                     (HttpURLConnection) urlResMvc.openConnection(proxy);
-            if (auth!=null) {
+            if (auth != null) {
                 // Java bug : http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6459815
-                String encoding = new sun.misc.BASE64Encoder().encode (auth.getBytes());
-                encoding = encoding.replaceAll("\n", "");  
+                String encoding = new sun.misc.BASE64Encoder().encode(auth.getBytes());
+                encoding = encoding.replaceAll("\n", "");
                 String basicAuth = "Basic " + encoding;
-                connection.setRequestProperty ("Authorization", basicAuth);
+                connection.setRequestProperty("Authorization", basicAuth);
             }
 
             is = connection.getInputStream();
 
-            while (n < len && is!=null) {
+            while (n < len && is != null) {
                 int count = is.read(buffer, offset + n, len - n);
                 if (count < 0) {
                     if (n == 0) {
                         return -1;
                     } else {
-                       break;
+                        break;
                     }
                 }
                 n += count;
@@ -183,9 +183,7 @@ public class EgaSeekableResStream extends SeekableStream {
 
             return n;
 
-        }
-
-        catch (IOException e) {
+        } catch (IOException e) {
             // THis is a bit of a hack, but its not clear how else to handle this.  If a byte range is specified
             // that goes past the end of the file the response code will be 416.  The MAC os translates this to
             // an IOException with the 416 code in the message.  Windows translates the error to an EOFException.
@@ -204,9 +202,7 @@ public class EgaSeekableResStream extends SeekableStream {
                 throw e;
             }
 
-        }
-
-        finally {
+        } finally {
             if (is != null) {
                 is.close();
             }
@@ -223,14 +219,14 @@ public class EgaSeekableResStream extends SeekableStream {
 
 
     public int read() throws IOException {
-    	byte []tmp=new byte[1];
-    	read(tmp,0,1);
-    	return (int) tmp[0] & 0xFF; 
+        byte[] tmp = new byte[1];
+        read(tmp, 0, 1);
+        return (int) tmp[0] & 0xFF;
     }
 
     @Override
     public String getSource() {
-        return hack?null:url.toString()+hack_extension;
+        return hack ? null : url.toString() + hack_extension;
     }
 
     // A hack to return null as source, which will then default to BAM format in HTSJDK
@@ -238,27 +234,27 @@ public class EgaSeekableResStream extends SeekableStream {
         this.hack = hack;
         return this;
     }
-    
+
     // A hack to fool HTSJDK to recognize the file format based on the extension
     public EgaSeekableResStream setExtension(String hack_extension) {
         this.hack_extension = hack_extension;
         return this;
     }
-    
+
     @Override
     public void reset() {
-        if (position-marked > readLimit) {
+        if (position - marked > readLimit) {
             this.position = 0;
         } else {
             this.position = this.marked;
         }
     }
-    
+
     public void mark(int readLimit) {
         this.marked = this.position;
         this.readLimit = readLimit;
     }
-    
+
     public boolean markSupported() {
         return true;
     }

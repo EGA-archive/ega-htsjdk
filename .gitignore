@@ -1,21 +1,30 @@
-htsjdk.iws
-.command_tmp
-atlassian-ide-plugin.xml
-/htsjdk.version.properties
-/test-output
+#Java
+target/
 
-#intellij
-.idea/
-src/htsjdk.iml
+# Log file
+*.log
+
+# Idea files
+.idea
 *.iml
-*.ipr
-*.iws
-out/
 
+# Eclipse files
+.settings/
+.classpath
+.project
 
+# NetBeans files
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml
 
-
-#gradle stuff
-.gradle/
-build/
-/.nb-gradle/
+# Package Files #
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
