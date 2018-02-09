@@ -24,8 +24,13 @@
 package htsjdk.samtools.seekablestream;
 
 public interface UserPasswordInput {
-	public void setHost(String host);
-    public boolean showDialog();
-    public String getUser();
-    public String getPassword();
+
+    void setHost(String host);
+
+    boolean showDialog();
+
+    String getUser();
+
+    String getPassword();
+
 }
