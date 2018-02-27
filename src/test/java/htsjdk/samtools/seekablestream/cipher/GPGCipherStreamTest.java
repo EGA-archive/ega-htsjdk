@@ -29,6 +29,7 @@ import org.apache.commons.io.IOUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.*;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
+import org.bouncycastle.util.io.pem.PemReader;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -53,6 +54,26 @@ public class GPGCipherStreamTest extends HtsjdkTest {
         GPGCipherStream gpgCipherStream = new GPGCipherStream(seekableFileStream, pgpPublicKey, file.getName());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         IOUtils.copyLarge(gpgCipherStream, outputStream, new byte[528]);
+        gpgCipherStream.close();
+        outputStream.close();
+        // check for header to be correct, don't decrypt the whole file
+        Assert.assertEquals(Arrays.copyOfRange(outputStream.toByteArray(), 0, 13), new byte[]{-123, 2, 12, 3, 50, 10, 33, 105, -36, -54, -126, -127, 1});
+    }
+
+    @Test
+    public void testGPGEncryptionOfAESDecryptedStream() throws Exception {
+        byte[] privateKeyBytes;
+        try (PemReader pemReader = new PemReader(new InputStreamReader(new FileInputStream("src/test/resources/htsjdk/samtools/seekablestream/cipher/ega.sec")))) {
+            privateKeyBytes = pemReader.readPemObject().getContent();
+        }
+        File encryptedFile = new File("src/test/resources/htsjdk/samtools/seekablestream/cipher/lorem.aes.enc");
+        SeekableFileStream encryptedFileStream = new SeekableFileStream(encryptedFile);
+        SeekableAESCipherStream seekableAESCipherStream = new SeekableAESCipherStream(encryptedFileStream, privateKeyBytes);
+
+        PGPPublicKey pgpPublicKey = readPublicKey("src/test/resources/htsjdk/samtools/seekablestream/cipher/public.key");
+        GPGCipherStream gpgCipherStream = new GPGCipherStream(seekableAESCipherStream, pgpPublicKey);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        IOUtils.copyLarge(gpgCipherStream, outputStream, new byte[874]);
         gpgCipherStream.close();
         outputStream.close();
         // check for header to be correct, don't decrypt the whole file
