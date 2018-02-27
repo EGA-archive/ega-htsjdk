@@ -1,4 +1,6 @@
-package htsjdk.samtools.seekablestream;
+package htsjdk.samtools.seekablestream.cipher;
+
+import htsjdk.samtools.seekablestream.SeekableStream;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;

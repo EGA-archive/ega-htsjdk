@@ -24,7 +24,6 @@
 package htsjdk.samtools.seekablestream.cipher;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.seekablestream.SeekableAESCipherStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -38,7 +37,6 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.security.Security;
-import java.util.Arrays;
 import java.util.List;
 
 public class SeekableAESCipherStreamTest extends HtsjdkTest {
