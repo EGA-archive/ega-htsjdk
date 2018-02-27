@@ -30,6 +30,7 @@ import org.apache.commons.io.IOUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.testng.Assert;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -41,10 +42,13 @@ import java.util.List;
 
 public class SeekableAESCipherStreamTest extends HtsjdkTest {
 
+    @BeforeTest
+    private void init() {
+        Security.addProvider(new BouncyCastleProvider());
+    }
+
     @Test
     public void testAESDecryption() throws Exception {
-        Security.addProvider(new BouncyCastleProvider());
-
         byte[] privateKeyBytes;
         try (PemReader pemReader = new PemReader(new InputStreamReader(new FileInputStream("src/test/resources/htsjdk/samtools/seekablestream/cipher/ega.sec")))) {
             privateKeyBytes = pemReader.readPemObject().getContent();
@@ -52,7 +56,7 @@ public class SeekableAESCipherStreamTest extends HtsjdkTest {
 
         System.out.println("1. Raw file");
         File rawFile = new File("src/test/resources/htsjdk/samtools/seekablestream/cipher/lorem.raw");
-        String rawContents = FileUtils.readFileToString(rawFile, Charset.defaultCharset());
+        String rawContents = FileUtils.readLines(rawFile, Charset.defaultCharset()).iterator().next();
         System.out.println("\t" + rawContents + "\n");
         System.out.println("2. Encrypted file");
         File encryptedFile = new File("src/test/resources/htsjdk/samtools/seekablestream/cipher/lorem.aes.enc");
