@@ -11,13 +11,14 @@ import java.math.BigInteger;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Arrays;
 
 public class SeekableAESCipherStream extends SeekableStream {
 
     private final SeekableStream encryptedStream;
     private final int dataStart;
     private final SecretKeySpec secretKeySpec;
-    private final IvParameterSpec initialIVParameterSpec;
+    private final byte[] initialIV;
     private final Cipher aesCipher;
     private final int blockSize;
 
@@ -59,15 +60,16 @@ public class SeekableAESCipherStream extends SeekableStream {
         byte[] ivBytes = new byte[16];
         System.arraycopy(nonceBytes, 0, ivBytes, 0, nonceBytes.length);
         System.arraycopy(new byte[8], 0, ivBytes, nonceBytes.length, nonceBytes.length);
+        initialIV = Arrays.copyOf(ivBytes, ivBytes.length);
 
         Cipher rsaCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding", "BC");
         rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
         byte[] decryptedSecretBytes = rsaCipher.doFinal(encryptedSecretBytes);
 
         secretKeySpec = new SecretKeySpec(decryptedSecretBytes, "AES");
-        initialIVParameterSpec = new IvParameterSpec(ivBytes);
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(ivBytes);
         aesCipher = Cipher.getInstance("AES/" + aesMode + "/NoPadding", "BC"); // currently only CTR mode is supported
-        aesCipher.init(Cipher.DECRYPT_MODE, secretKeySpec, initialIVParameterSpec);
+        aesCipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
         blockSize = aesCipher.getBlockSize();
     }
 
@@ -85,15 +87,10 @@ public class SeekableAESCipherStream extends SeekableStream {
     public void seek(long position) throws IOException {
         encryptedStream.seek(position + dataStart);
 
-        long newBlock = position / blockSize;
-        if (newBlock == block) {
-            return;
-        }
-
-        block = newBlock;
+        block = position / blockSize;
 
         // Update CTR IV counter according to block number
-        BigInteger ivBI = new BigInteger(initialIVParameterSpec.getIV());
+        BigInteger ivBI = new BigInteger(initialIV);
         ivBI = ivBI.add(BigInteger.valueOf(block));
         IvParameterSpec newIVParameterSpec = new IvParameterSpec(ivBI.toByteArray());
 
@@ -126,6 +123,12 @@ public class SeekableAESCipherStream extends SeekableStream {
         long start = startBlock * blockSize;
         long endBlock = (currentPosition + length) / blockSize + 1;
         long end = endBlock * blockSize;
+        if (end > length()) {
+            end = length();
+        }
+        if (length > end - start) {
+            length = (int) (end - start);
+        }
         int prepended = (int) (currentPosition - start);
         int appended = (int) (end - (currentPosition + length));
         encryptedStream.seek(start + dataStart);

@@ -64,7 +64,13 @@ public class SeekableAESCipherStreamTest extends HtsjdkTest {
         SeekableFileStream encryptedFileStream = new SeekableFileStream(encryptedFile);
         SeekableAESCipherStream seekableAESCipherStream = new SeekableAESCipherStream(encryptedFileStream, privateKeyBytes);
 
-        System.out.println("3. Random-access file decryption");
+        System.out.println("3. Decrypt whole file");
+        seekableAESCipherStream.seek(0);
+        List<String> strings = IOUtils.readLines(seekableAESCipherStream, Charset.defaultCharset());
+        System.out.println("\t" + strings.iterator().next() + "\n");
+        Assert.assertEquals(rawContents, strings.iterator().next());
+
+        System.out.println("4. Random-access file decryption");
         int from = 0;
         int length = 100;
         byte[] result = new byte[length];
@@ -104,6 +110,15 @@ public class SeekableAESCipherStreamTest extends HtsjdkTest {
         System.out.println("\tFrom " + from + " to " + (from + length) + ": " + decryptedString);
         rawString = rawContents.substring(from, from + length);
         Assert.assertEquals(rawString, decryptedString);
+
+        from = 0;
+        length = 530;
+        result = new byte[length];
+        seekableAESCipherStream.seek(from);
+        seekableAESCipherStream.read(result, 0, length);
+        decryptedString = new String(result, Charset.defaultCharset());
+        System.out.println("\tFrom " + from + " to " + (from + length) + ": " + decryptedString);
+        Assert.assertTrue(decryptedString.startsWith(rawContents));
 
         seekableAESCipherStream.close();
     }
