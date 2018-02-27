@@ -14,11 +14,13 @@ import java.security.spec.PKCS8EncodedKeySpec;
 
 public class SeekableAESCipherStream extends SeekableStream {
 
-    private SeekableStream encryptedStream;
-    private int dataStart;
-    private SecretKeySpec secretKeySpec;
-    private IvParameterSpec initialIVParameterSpec;
-    private Cipher aesCipher;
+    private final SeekableStream encryptedStream;
+    private final int dataStart;
+    private final SecretKeySpec secretKeySpec;
+    private final IvParameterSpec initialIVParameterSpec;
+    private final Cipher aesCipher;
+    private final int blockSize;
+
     private long block;
 
     public SeekableAESCipherStream(SeekableStream input, byte[] privateKeyBytes) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException, InvalidKeyException, NoSuchProviderException, NoSuchPaddingException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
@@ -66,6 +68,7 @@ public class SeekableAESCipherStream extends SeekableStream {
         initialIVParameterSpec = new IvParameterSpec(ivBytes);
         aesCipher = Cipher.getInstance("AES/" + aesMode + "/NoPadding", "BC"); // currently only CTR mode is supported
         aesCipher.init(Cipher.DECRYPT_MODE, secretKeySpec, initialIVParameterSpec);
+        blockSize = aesCipher.getBlockSize();
     }
 
     @Override
@@ -82,7 +85,7 @@ public class SeekableAESCipherStream extends SeekableStream {
     public void seek(long position) throws IOException {
         encryptedStream.seek(position + dataStart);
 
-        long newBlock = position / aesCipher.getBlockSize();
+        long newBlock = position / blockSize;
         if (newBlock == block) {
             return;
         }
@@ -95,7 +98,6 @@ public class SeekableAESCipherStream extends SeekableStream {
         IvParameterSpec newIVParameterSpec = new IvParameterSpec(ivBI.toByteArray());
 
         try {
-            aesCipher = Cipher.getInstance("AES/CTR/NoPadding", "BC");
             aesCipher.init(Cipher.DECRYPT_MODE, secretKeySpec, newIVParameterSpec);
         } catch (Exception e) {
             throw new IOException(e);
@@ -116,7 +118,9 @@ public class SeekableAESCipherStream extends SeekableStream {
 
     @Override
     public int read(byte[] buffer, int offset, int length) throws IOException {
-        int blockSize = aesCipher.getBlockSize();
+        if (eof()) {
+            return -1;
+        }
         long currentPosition = position();
         long startBlock = currentPosition / blockSize;
         long start = startBlock * blockSize;
