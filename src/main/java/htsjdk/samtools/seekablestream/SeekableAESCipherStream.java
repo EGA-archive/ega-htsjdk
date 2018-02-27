@@ -22,8 +22,6 @@ public class SeekableAESCipherStream extends SeekableStream {
     private final Cipher aesCipher;
     private final int blockSize;
 
-    private long block;
-
     public SeekableAESCipherStream(SeekableStream input, byte[] privateKeyBytes) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException, InvalidKeyException, NoSuchProviderException, NoSuchPaddingException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
         encryptedStream = input;
         encryptedStream.seek(0);
@@ -87,7 +85,7 @@ public class SeekableAESCipherStream extends SeekableStream {
     public void seek(long position) throws IOException {
         encryptedStream.seek(position + dataStart);
 
-        block = position / blockSize;
+        long block = position / blockSize;
 
         // Update CTR IV counter according to block number
         BigInteger ivBI = new BigInteger(initialIV);
