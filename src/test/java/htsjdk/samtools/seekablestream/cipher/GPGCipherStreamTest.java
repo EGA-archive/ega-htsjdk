@@ -47,13 +47,13 @@ public class GPGCipherStreamTest extends HtsjdkTest {
     }
 
     @Test
-    public void testGPGEncryptionSuccess() throws Exception {
+    public void testGPGEncryptionOfPlainFile() throws Exception {
         PGPPublicKey pgpPublicKey = readPublicKey("src/test/resources/htsjdk/samtools/seekablestream/cipher/public.key");
         File file = new File("src/test/resources/htsjdk/samtools/seekablestream/cipher/lorem.raw");
         SeekableFileStream seekableFileStream = new SeekableFileStream(file);
         GPGCipherStream gpgCipherStream = new GPGCipherStream(seekableFileStream, pgpPublicKey, file.getName());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        IOUtils.copyLarge(gpgCipherStream, outputStream, new byte[528]);
+        IOUtils.copyLarge(gpgCipherStream, outputStream);
         gpgCipherStream.close();
         outputStream.close();
         // check for header to be correct, don't decrypt the whole file
@@ -78,18 +78,6 @@ public class GPGCipherStreamTest extends HtsjdkTest {
         outputStream.close();
         // check for header to be correct, don't decrypt the whole file
         Assert.assertEquals(Arrays.copyOfRange(outputStream.toByteArray(), 0, 13), new byte[]{-123, 2, 12, 3, 50, 10, 33, 105, -36, -54, -126, -127, 1});
-    }
-
-    @Test
-    public void testGPGEncryptionFail() throws Exception {
-        PGPPublicKey pgpPublicKey = readPublicKey("src/test/resources/htsjdk/samtools/seekablestream/cipher/public.key");
-        File file = new File("src/test/resources/htsjdk/samtools/seekablestream/cipher/lorem.raw");
-        SeekableFileStream seekableFileStream = new SeekableFileStream(file);
-        GPGCipherStream gpgCipherStream = new GPGCipherStream(seekableFileStream, pgpPublicKey, file.getName());
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        Assert.assertThrows(IOException.class, () -> IOUtils.copyLarge(gpgCipherStream, outputStream, new byte[10]));
-        gpgCipherStream.close();
-        outputStream.close();
     }
 
     private PGPPublicKey readPublicKey(String publicKeyFilePath) throws IOException, PGPException {
