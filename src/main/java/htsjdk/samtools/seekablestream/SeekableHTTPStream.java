@@ -28,10 +28,7 @@ import htsjdk.samtools.util.HttpUtils;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
+import java.net.*;
 
 /**
  * @author jrobinso
@@ -135,7 +132,7 @@ public class SeekableHTTPStream extends SeekableStream {
 
             return n;
 
-        } catch (IOException e) {
+        } catch (IOException | URISyntaxException e) {
             // THis is a bit of a hack, but its not clear how else to handle this.  If a byte range is specified
             // that goes past the end of the file the response code will be 416.  The MAC os translates this to
             // an IOException with the 416 code in the message.  Windows translates the error to an EOFException.
@@ -151,7 +148,7 @@ public class SeekableHTTPStream extends SeekableStream {
                     return n;
                 }
             } else {
-                throw e;
+                throw new IOException(e);
             }
 
         } finally {
@@ -164,7 +161,7 @@ public class SeekableHTTPStream extends SeekableStream {
         }
     }
 
-    protected URL getActualURLToRead(byte[] buffer, int offset, int len) throws MalformedURLException {
+    protected URL getActualURLToRead(byte[] buffer, int offset, int len) throws MalformedURLException, URISyntaxException {
         return url; // return unchanged URL by default
     }
 
