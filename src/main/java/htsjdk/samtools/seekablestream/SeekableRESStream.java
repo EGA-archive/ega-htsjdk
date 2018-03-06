@@ -15,10 +15,9 @@
  */
 package htsjdk.samtools.seekablestream;
 
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.*;
 
 /**
  * @author asenf
@@ -36,13 +35,21 @@ public class SeekableRESStream extends SeekableBasicAuthHTTPStream {
     private boolean hack = false;
     private String hackExtension = "";
 
-    public SeekableRESStream(final URL url, final String auth, final long fileSize) {
-        super(url, auth);
+    public SeekableRESStream(final URL url, final String auth, final long fileSize) throws MalformedURLException {
+        super(new URL(UriComponentsBuilder.fromHttpUrl(url.toString()).
+                replaceQueryParam("destinationFormat", "").
+                replaceQueryParam("extension", "").
+                build().
+                toUriString().replace("destinationFormat=", "").replace("extension=", "")), auth);
         this.contentLength = fileSize;
     }
 
-    public SeekableRESStream(final URL url, final Proxy proxy, final String auth, final long fileSize) {
-        super(url, proxy, auth);
+    public SeekableRESStream(final URL url, final Proxy proxy, final String auth, final long fileSize) throws MalformedURLException {
+        super(new URL(UriComponentsBuilder.fromHttpUrl(url.toString()).
+                replaceQueryParam("destinationFormat", "").
+                replaceQueryParam("extension", "").
+                build().
+                toUriString().replace("destinationFormat=", "").replace("extension=", "")), proxy, auth);
         this.contentLength = fileSize;
     }
 
@@ -54,7 +61,6 @@ public class SeekableRESStream extends SeekableBasicAuthHTTPStream {
     @Override
     protected URL getActualURLToRead(byte[] buffer, int offset, int len) throws MalformedURLException {
         // RES_MVC Code: Specify URL parameters for RES (replaces 'Range=...')
-        String resURL = url.toString();
         String startCoordinate = String.valueOf(position);
         //long endRange = position + len - 1;
         long endRange = position + len;
@@ -63,8 +69,12 @@ public class SeekableRESStream extends SeekableBasicAuthHTTPStream {
             endRange = Math.min(endRange, contentLength);
         }
         String endCoordinate = String.valueOf(endRange);
-        resURL += String.format("?startCoordinate=%s&endCoordinate=%s&destinationFormat=%s", startCoordinate, endCoordinate, "plain");
-        return new URL(resURL);
+        URI uri = UriComponentsBuilder.fromHttpUrl(url.toString()).
+                replaceQueryParam("startCoordinate", startCoordinate).
+                replaceQueryParam("endCoordinate", endCoordinate).
+                build().
+                toUri();
+        return uri.toURL();
     }
 
     @Override
