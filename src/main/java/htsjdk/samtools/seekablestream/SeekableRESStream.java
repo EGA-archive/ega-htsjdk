@@ -35,13 +35,21 @@ public class SeekableRESStream extends SeekableBasicAuthHTTPStream {
     private boolean hack = false;
     private String hackExtension = "";
 
-    public SeekableRESStream(final URL url, final String auth, final long fileSize) {
-        super(url, auth);
+    public SeekableRESStream(final URL url, final String auth, final long fileSize) throws MalformedURLException {
+        super(new URL(UriComponentsBuilder.fromHttpUrl(url.toString()).
+                replaceQueryParam("destinationFormat", "").
+                replaceQueryParam("extension", "").
+                build().
+                toUriString().replace("destinationFormat=", "").replace("extension=", "")), auth);
         this.contentLength = fileSize;
     }
 
-    public SeekableRESStream(final URL url, final Proxy proxy, final String auth, final long fileSize) {
-        super(url, proxy, auth);
+    public SeekableRESStream(final URL url, final Proxy proxy, final String auth, final long fileSize) throws MalformedURLException {
+        super(new URL(UriComponentsBuilder.fromHttpUrl(url.toString()).
+                replaceQueryParam("destinationFormat", "").
+                replaceQueryParam("extension", "").
+                build().
+                toUriString().replace("destinationFormat=", "").replace("extension=", "")), proxy, auth);
         this.contentLength = fileSize;
     }
 
