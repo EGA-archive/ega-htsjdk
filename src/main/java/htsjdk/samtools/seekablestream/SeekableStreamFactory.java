@@ -106,7 +106,9 @@ public class SeekableStreamFactory {
                     URLConnection urlConnection = fileSizeURL.openConnection();
                     String fileSizeString = IOUtils.readLines(urlConnection.getInputStream(), Charset.defaultCharset()).iterator().next();
                     long fileSize = Long.parseLong(fileSizeString);
-                    return new SeekableRESStream(url, null, null, fileSize);
+                    //return new SeekableRESStream(url, null, null, fileSize);
+                    //return new EgaSeekableResStream(url, null, null, fileSize);
+                    return new EgaSeekableCachedResStream(url, null, null, fileSize);
                 } catch (Exception e) {
                     return new SeekableHTTPStream(url);
                 }
