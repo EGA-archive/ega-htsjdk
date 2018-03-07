@@ -98,7 +98,11 @@ public class SeekableStreamFactory {
             // todo -- add support for SeekableBlockInputStream
 
             if (path.startsWith("http:") || path.startsWith("https:")) {
-                final URL url = new URL(path);
+                String path_ = path;
+                if (path_.contains("?") && path_.toLowerCase().contains("vcf")) 
+                    path_ = path_.substring(0, path_.indexOf("?"));
+                System.out.println("path = " + path_);
+                final URL url = new URL(path_);
                 final String mainURLString = path.contains("?") ? path.substring(0, path.indexOf("?")) : path;
                 final String fileSizeURLString = mainURLString + "/size";
                 final URL fileSizeURL = new URL(fileSizeURLString);
