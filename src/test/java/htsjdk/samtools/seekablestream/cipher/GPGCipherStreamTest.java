@@ -25,7 +25,6 @@ package htsjdk.samtools.seekablestream.cipher;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.*;
@@ -53,11 +52,11 @@ public class GPGCipherStreamTest extends HtsjdkTest {
         SeekableFileStream seekableFileStream = new SeekableFileStream(file);
         GPGSymmetricCipherStream gpgSymmetricCipherStream = new GPGSymmetricCipherStream(seekableFileStream, "password", file.getName());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        IOUtils.copyLarge(gpgSymmetricCipherStream, FileUtils.openOutputStream(new File("/Users/dmytrot/symmetric.gpg")));
+        IOUtils.copyLarge(gpgSymmetricCipherStream, outputStream);
         gpgSymmetricCipherStream.close();
         outputStream.close();
         // check for header to be correct, don't decrypt the whole file
-//        Assert.assertEquals(Arrays.copyOfRange(outputStream.toByteArray(), 0, 6), new byte[]{-116, 13, 4, 9, 3, 2});
+        Assert.assertEquals(Arrays.copyOfRange(outputStream.toByteArray(), 0, 6), new byte[]{-116, 13, 4, 9, 3, 2});
     }
 
     @Test
