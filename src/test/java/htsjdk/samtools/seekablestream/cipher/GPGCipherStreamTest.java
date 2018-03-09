@@ -25,6 +25,7 @@ package htsjdk.samtools.seekablestream.cipher;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.*;
@@ -47,14 +48,27 @@ public class GPGCipherStreamTest extends HtsjdkTest {
     }
 
     @Test
-    public void testGPGEncryptionOfPlainFile() throws Exception {
+    public void testGPGSymmetricEncryptionOfPlainFile() throws Exception {
+        File file = new File("src/test/resources/htsjdk/samtools/seekablestream/cipher/lorem.raw");
+        SeekableFileStream seekableFileStream = new SeekableFileStream(file);
+        GPGSymmetricCipherStream gpgSymmetricCipherStream = new GPGSymmetricCipherStream(seekableFileStream, "password", file.getName());
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        IOUtils.copyLarge(gpgSymmetricCipherStream, FileUtils.openOutputStream(new File("/Users/dmytrot/symmetric.gpg")));
+        gpgSymmetricCipherStream.close();
+        outputStream.close();
+        // check for header to be correct, don't decrypt the whole file
+//        Assert.assertEquals(Arrays.copyOfRange(outputStream.toByteArray(), 0, 6), new byte[]{-116, 13, 4, 9, 3, 2});
+    }
+
+    @Test
+    public void testGPGAsymmetricEncryptionOfPlainFile() throws Exception {
         PGPPublicKey pgpPublicKey = readPublicKey("src/test/resources/htsjdk/samtools/seekablestream/cipher/public.key");
         File file = new File("src/test/resources/htsjdk/samtools/seekablestream/cipher/lorem.raw");
         SeekableFileStream seekableFileStream = new SeekableFileStream(file);
-        GPGCipherStream gpgCipherStream = new GPGCipherStream(seekableFileStream, pgpPublicKey, file.getName());
+        GPGAsymmetricCipherStream gpgAsymmetricCipherStream = new GPGAsymmetricCipherStream(seekableFileStream, pgpPublicKey, file.getName());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        IOUtils.copyLarge(gpgCipherStream, outputStream);
-        gpgCipherStream.close();
+        IOUtils.copyLarge(gpgAsymmetricCipherStream, outputStream);
+        gpgAsymmetricCipherStream.close();
         outputStream.close();
         // check for header to be correct, don't decrypt the whole file
         Assert.assertEquals(Arrays.copyOfRange(outputStream.toByteArray(), 0, 13), new byte[]{-123, 2, 12, 3, 50, 10, 33, 105, -36, -54, -126, -127, 1});
@@ -71,10 +85,10 @@ public class GPGCipherStreamTest extends HtsjdkTest {
         SeekableAESCipherStream seekableAESCipherStream = new SeekableAESCipherStream(encryptedFileStream, privateKeyBytes);
 
         PGPPublicKey pgpPublicKey = readPublicKey("src/test/resources/htsjdk/samtools/seekablestream/cipher/public.key");
-        GPGCipherStream gpgCipherStream = new GPGCipherStream(seekableAESCipherStream, pgpPublicKey);
+        GPGAsymmetricCipherStream gpgAsymmetricCipherStream = new GPGAsymmetricCipherStream(seekableAESCipherStream, pgpPublicKey);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        IOUtils.copyLarge(gpgCipherStream, outputStream, new byte[874]);
-        gpgCipherStream.close();
+        IOUtils.copyLarge(gpgAsymmetricCipherStream, outputStream, new byte[874]);
+        gpgAsymmetricCipherStream.close();
         outputStream.close();
         // check for header to be correct, don't decrypt the whole file
         Assert.assertEquals(Arrays.copyOfRange(outputStream.toByteArray(), 0, 13), new byte[]{-123, 2, 12, 3, 50, 10, 33, 105, -36, -54, -126, -127, 1});
