@@ -5,14 +5,11 @@ import com.google.common.util.concurrent.TimeLimiter;
 import com.google.common.util.concurrent.UncheckedTimeoutException;
 import org.apache.commons.io.IOUtils;
 import org.bouncycastle.openpgp.*;
-import org.bouncycastle.openpgp.operator.bc.BcPGPDataEncryptorBuilder;
-import org.bouncycastle.openpgp.operator.bc.BcPublicKeyKeyEncryptionMethodGenerator;
 
 import java.io.*;
-import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
-public class GPGCipherStream extends InputStream {
+public abstract class GPGCipherStream<T> extends InputStream {
 
     private static final int TIMEOUT = 100;
 
@@ -24,18 +21,14 @@ public class GPGCipherStream extends InputStream {
     private final PipedInputStream pipedInputStream;
     private final PipedOutputStream pipedOutputStream;
 
-    public GPGCipherStream(InputStream inputStream, PGPPublicKey publicKey) throws IOException, PGPException {
-        this(inputStream, publicKey, "");
+    public GPGCipherStream(InputStream inputStream, T key) throws IOException, PGPException {
+        this(inputStream, key, "");
     }
 
-    public GPGCipherStream(InputStream inputStream, PGPPublicKey publicKey, String filename) throws IOException, PGPException {
+    public GPGCipherStream(InputStream inputStream, T key, String filename) throws IOException, PGPException {
         this.timeLimiter = new SimpleTimeLimiter();
         this.seekableInputStream = inputStream;
-        BcPGPDataEncryptorBuilder dataEncryptorBuilder = new BcPGPDataEncryptorBuilder(publicKey.getAlgorithm());
-        dataEncryptorBuilder.setWithIntegrityPacket(true);
-        dataEncryptorBuilder.setSecureRandom(new SecureRandom());
-        PGPEncryptedDataGenerator encryptedDataGenerator = new PGPEncryptedDataGenerator(dataEncryptorBuilder);
-        encryptedDataGenerator.addMethod(new BcPublicKeyKeyEncryptionMethodGenerator(publicKey));
+        PGPEncryptedDataGenerator encryptedDataGenerator = getPGPEncryptedDataGenerator(key);
         this.pipedInputStream = new PipedInputStream();
         this.pipedOutputStream = new PipedOutputStream(pipedInputStream);
         this.encryptedOutStream = encryptedDataGenerator.open(pipedOutputStream, new byte[1 << 16]);
@@ -50,6 +43,8 @@ public class GPGCipherStream extends InputStream {
             }
         }).start();
     }
+
+    protected abstract PGPEncryptedDataGenerator getPGPEncryptedDataGenerator(T key);
 
     @Override
     public int read() throws IOException {
