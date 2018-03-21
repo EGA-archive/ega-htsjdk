@@ -39,6 +39,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.security.Security;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SeekableAESCipherStreamTest extends HtsjdkTest {
 
@@ -68,8 +69,11 @@ public class SeekableAESCipherStreamTest extends HtsjdkTest {
 
         System.out.println("3. Decrypt whole file");
         seekableAESCipherStream.seek(0);
+//        byte[] bytes = IOUtils.readFully(seekableAESCipherStream, 530);
+//        System.out.println("new String(bytes, Charset.defaultCharset()) = " + new String(bytes, Charset.defaultCharset()));
+//        seekableAESCipherStream.seek(0);
         List<String> strings = IOUtils.readLines(seekableAESCipherStream, Charset.defaultCharset());
-        System.out.println("\t" + strings.iterator().next() + "\n");
+        System.out.println("\t" + strings.stream().collect(Collectors.joining("\n")) + "\n");
         Assert.assertEquals(rawContents, strings.iterator().next());
 
         System.out.println("4. Random-access file decryption");

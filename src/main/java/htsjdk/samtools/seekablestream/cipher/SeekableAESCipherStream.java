@@ -133,9 +133,15 @@ public class SeekableAESCipherStream extends SeekableStream {
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(encryptedBytes);
         CipherInputStream cipherInputStream = new CipherInputStream(byteArrayInputStream, aesCipher);
         cipherInputStream.read(new byte[prepended]);
-        int read = cipherInputStream.read(buffer, offset, length);
-        encryptedStream.seek(currentPosition + length + dataStart);
-        return read;
+        int realRead = 0;
+        int read;
+        while (length != 0 && (read = cipherInputStream.read(buffer, offset, length)) != -1) {
+            offset += read;
+            length -= read;
+            realRead += read;
+        }
+        encryptedStream.seek(currentPosition + realRead + dataStart);
+        return realRead;
     }
 
     @Override
