@@ -33,33 +33,28 @@ public class SeekableAESCipherStream extends SeekableStream {
         PrivateKey privateKey = keyFactory.generatePrivate(pkcs8EncodedKeySpec);
 
         int headerLength;
-        int keyNumber;
         int encryptedSecretSize;
-        int nonceSize;
+        int ivSize;
         String aesMode;
         InputStreamReader inputStreamReader = new InputStreamReader(encryptedStream);
         BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
         String header = bufferedReader.readLine();
         headerLength = header.length() + 1; // +1 for linebreak
         String[] parts = header.split("\\|");
-        keyNumber = Integer.parseInt(parts[0]);
         encryptedSecretSize = Integer.parseInt(parts[1]);
-        nonceSize = Integer.parseInt(parts[2]);
-        aesMode = parts[3].replace("b'", "").replace("'", "");
+        ivSize = Integer.parseInt(parts[2]);
+        aesMode = parts[3];
 
-        this.dataStart = headerLength + encryptedSecretSize + nonceSize;
+        this.dataStart = headerLength + encryptedSecretSize + ivSize;
 
         encryptedStream.seek(0);
 
         byte[] headerBytes = new byte[headerLength];
         byte[] encryptedSecretBytes = new byte[encryptedSecretSize];
-        byte[] nonceBytes = new byte[nonceSize];
+        byte[] ivBytes = new byte[ivSize];
         encryptedStream.read(headerBytes, 0, headerLength);
         encryptedStream.read(encryptedSecretBytes, 0, encryptedSecretSize);
-        encryptedStream.read(nonceBytes, 0, nonceSize);
-        byte[] ivBytes = new byte[16];
-        System.arraycopy(nonceBytes, 0, ivBytes, 0, nonceBytes.length);
-        System.arraycopy(new byte[8], 0, ivBytes, nonceBytes.length, nonceBytes.length);
+        encryptedStream.read(ivBytes, 0, ivSize);
         initialIV = Arrays.copyOf(ivBytes, ivBytes.length);
 
         Cipher rsaCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding", "BC");
