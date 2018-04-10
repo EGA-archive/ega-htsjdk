@@ -9,7 +9,7 @@ import org.bouncycastle.openpgp.*;
 import java.io.*;
 import java.util.concurrent.TimeUnit;
 
-public abstract class GPGCipherStream<T> extends InputStream {
+public abstract class GPGCipherInputStream<T> extends InputStream {
 
     private static final int TIMEOUT = 100;
 
@@ -21,11 +21,11 @@ public abstract class GPGCipherStream<T> extends InputStream {
     private final PipedInputStream pipedInputStream;
     private final PipedOutputStream pipedOutputStream;
 
-    public GPGCipherStream(InputStream inputStream, T key) throws IOException, PGPException {
+    public GPGCipherInputStream(InputStream inputStream, T key) throws IOException, PGPException {
         this(inputStream, key, "");
     }
 
-    public GPGCipherStream(InputStream inputStream, T key, String filename) throws IOException, PGPException {
+    public GPGCipherInputStream(InputStream inputStream, T key, String filename) throws IOException, PGPException {
         this.timeLimiter = new SimpleTimeLimiter();
         this.seekableInputStream = inputStream;
         PGPEncryptedDataGenerator encryptedDataGenerator = getPGPEncryptedDataGenerator(key);

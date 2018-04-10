@@ -7,17 +7,17 @@ import org.bouncycastle.openpgp.operator.bc.BcPBEKeyEncryptionMethodGenerator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPDataEncryptorBuilder;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.SecureRandom;
 
-public class GPGSymmetricCipherStream extends GPGCipherStream<String> {
+public class GPGSymmetricCipherOutputStream extends GPGCipherOutputStream<String> {
 
-    public GPGSymmetricCipherStream(InputStream inputStream, String key) throws IOException, PGPException {
-        super(inputStream, key);
+    public GPGSymmetricCipherOutputStream(OutputStream outputStream, String key) throws IOException, PGPException {
+        super(outputStream, key);
     }
 
-    public GPGSymmetricCipherStream(InputStream inputStream, String key, String filename) throws IOException, PGPException {
-        super(inputStream, key, filename);
+    public GPGSymmetricCipherOutputStream(OutputStream outputStream, String key, String filename) throws IOException, PGPException {
+        super(outputStream, key, filename);
     }
 
     @Override
